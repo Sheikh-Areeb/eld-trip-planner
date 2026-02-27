@@ -82,13 +82,12 @@ npm run dev
 
 ### Backend (Railway)
 
-1. Create a Railway service with root directory `backend/`.
+1. Create a Railway service from repository root (`/`).
 2. Deploy using repository source.
-3. Railway config-as-code is included with `builder = "RAILPACK"`:
-   - `backend/railway.toml` for service root `backend/`
-   - root `railway.toml` for monorepo root deployments
-4. Set required backend environment variables.
-5. Use the generated Railway URL as your backend URL.
+3. Railway config-as-code is included in root `railway.toml` with `builder = "RAILPACK"`.
+4. Root `requirements.txt` and `start.sh` are included so Railpack can detect Python in this monorepo and start Django from `backend/`.
+5. Set required backend environment variables.
+6. Use the generated Railway URL as your backend URL.
 
 ### Frontend (Vercel)
 
