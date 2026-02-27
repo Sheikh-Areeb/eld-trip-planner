@@ -76,7 +76,8 @@ npm run dev
 ### Backend (Railway)
 1. Create a Railway service with root directory `backend/`.
 2. Deploy using repository source.
-3. `nixpacks.toml` and `Procfile` are included in `backend/` so Railway can detect Python and run ASGI.
+3. Preferred: use service root `backend/` and rely on `backend/nixpacks.toml`.
+4. If service root stays repo root, use root `nixpacks.toml` (already included) which runs build/start from `backend/`.
 4. Set required backend environment variables.
 5. Use the generated Railway URL as your backend URL.
 
