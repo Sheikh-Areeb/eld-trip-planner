@@ -73,6 +73,13 @@ npm run dev
 4. Set required backend environment variables.
 5. Copy backend URL, for example `https://your-backend.onrender.com`.
 
+### Backend (Railway)
+1. Create a Railway service with root directory `backend/`.
+2. Deploy using repository source.
+3. `nixpacks.toml` and `Procfile` are included in `backend/` so Railway can detect Python and run ASGI.
+4. Set required backend environment variables.
+5. Use the generated Railway URL as your backend URL.
+
 ### Frontend (Vercel)
 1. Import this repo in Vercel.
 2. Set project root to `frontend`.
