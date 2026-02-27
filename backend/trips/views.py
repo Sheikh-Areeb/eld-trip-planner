@@ -263,36 +263,6 @@ class TripPlanLatestView(APIView):
         })
 
 
-class TripPlanListView(APIView):
-    """GET /api/trips/plans/"""
-
-    def get(self, request):
-        limit_raw = request.query_params.get('limit', '10')
-        try:
-            limit = max(1, min(50, int(limit_raw)))
-        except (TypeError, ValueError):
-            limit = 10
-
-        plans = TripPlan.objects.all()[:limit]
-        result = []
-        for plan in plans:
-            payload = plan.response_payload or {}
-            trip = payload.get('trip', {})
-            result.append({
-                'plan_id': plan.id,
-                'created_at': plan.created_at.isoformat(),
-                'current_location': plan.current_location,
-                'pickup_location': plan.pickup_location,
-                'dropoff_location': plan.dropoff_location,
-                'current_cycle_used': plan.current_cycle_used,
-                'total_distance_miles': trip.get('total_distance_miles'),
-                'total_drive_hours': trip.get('total_drive_hours'),
-                'num_days': trip.get('num_days'),
-            })
-
-        return Response({'plans': result})
-
-
 class TripPlanRecentView(APIView):
     """GET /api/trips/plans/recent/?limit=5"""
 
