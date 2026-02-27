@@ -84,10 +84,11 @@ npm run dev
 
 1. Create a Railway service with root directory `backend/`.
 2. Deploy using repository source.
-3. Preferred: use service root `backend/` and rely on `backend/nixpacks.toml`.
-4. If service root stays repo root, use root `nixpacks.toml` (already included) which runs build/start from `backend/`.
-5. Set required backend environment variables.
-6. Use the generated Railway URL as your backend URL.
+3. Railway config-as-code is included with `builder = "RAILPACK"`:
+   - `backend/railway.toml` for service root `backend/`
+   - root `railway.toml` for monorepo root deployments
+4. Set required backend environment variables.
+5. Use the generated Railway URL as your backend URL.
 
 ### Frontend (Vercel)
 
