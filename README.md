@@ -3,6 +3,7 @@
 Full-stack assessment app using Django + React to plan property-carrier trips with HOS constraints, map output, and ELD daily logs.
 
 ## Features and assumptions
+
 - Inputs:
   - Current location
   - Pickup location
@@ -19,6 +20,7 @@ Full-stack assessment app using Django + React to plan property-carrier trips wi
   - 1 hour pickup and 1 hour dropoff
 
 ## Tech stack
+
 - Backend: Django + Django REST Framework
 - Frontend: React + Vite + Leaflet
 - Database: PostgreSQL
@@ -27,6 +29,7 @@ Full-stack assessment app using Django + React to plan property-carrier trips wi
 ## Local setup
 
 ### 1) Backend
+
 ```bash
 cd backend
 python -m venv ../venv
@@ -38,6 +41,7 @@ python manage.py runserver
 ```
 
 ### 2) Frontend
+
 ```bash
 cd frontend
 npm install
@@ -48,6 +52,7 @@ npm run dev
 ## Environment variables
 
 ### Backend (`backend/.env`)
+
 - `LOCATIONIQ_API_KEY`
 - `LOCATIONIQ_REGION`
 - `SECRET_KEY`
@@ -60,6 +65,7 @@ npm run dev
 - `POSTGRES_SSLMODE`
 
 ### Frontend (`frontend/.env`)
+
 - `VITE_API_URL`
 - `VITE_LOCATIONIQ_KEY`
 - `VITE_LOCATIONIQ_REGION`
@@ -67,6 +73,7 @@ npm run dev
 ## Deployment (recommended)
 
 ### Backend (Render)
+
 1. Create a new Web Service from `backend/`.
 2. Build command: `pip install -r requirements.txt`
 3. Start command: `python manage.py migrate && uvicorn spotter.asgi:application --host 0.0.0.0 --port $PORT`
@@ -74,14 +81,16 @@ npm run dev
 5. Copy backend URL, for example `https://your-backend.onrender.com`.
 
 ### Backend (Railway)
+
 1. Create a Railway service with root directory `backend/`.
 2. Deploy using repository source.
 3. Preferred: use service root `backend/` and rely on `backend/nixpacks.toml`.
 4. If service root stays repo root, use root `nixpacks.toml` (already included) which runs build/start from `backend/`.
-4. Set required backend environment variables.
-5. Use the generated Railway URL as your backend URL.
+5. Set required backend environment variables.
+6. Use the generated Railway URL as your backend URL.
 
 ### Frontend (Vercel)
+
 1. Import this repo in Vercel.
 2. Set project root to `frontend`.
 3. Set:
@@ -90,6 +99,7 @@ npm run dev
 4. Deploy.
 
 ## Submission checklist
+
 - Push repo with both `backend/` and `frontend/`
 - Add hosted frontend URL
 - Add 3-5 minute Loom URL
