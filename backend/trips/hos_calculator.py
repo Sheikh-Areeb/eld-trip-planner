@@ -8,7 +8,7 @@ Rules:
 - 30-minute break required after 8 cumulative hours driving (any 30-min non-driving period qualifies)
 - Fuel stop every 1,000 miles
 - 1 hour pickup stop, 1 hour dropoff stop
-- Average driving speed: 55 mph
+- Driving progression speed derived from routing provider duration
 """
 
 from dataclasses import dataclass, field
@@ -94,7 +94,13 @@ def calculate_trip(
     if config.short_haul_mode == 'non_cdl_150' and config.use_16_hour_exception:
         raise ValueError('16-hour short-haul exception cannot be combined with non-CDL short-haul mode.')
 
-    AVG_SPEED_MPH = 55.0
+    # Use provider-derived effective speed whenever duration is available.
+    # Fallback only guards invalid/zero provider duration.
+    effective_speed_mph = (
+        total_distance_miles / total_drive_time_hours
+        if total_distance_miles > 0 and total_drive_time_hours > 0
+        else 55.0
+    )
     base_drive_limit = 11.0
     base_window_limit = 14.0
 
@@ -407,14 +413,14 @@ def calculate_trip(
             miles_before_fuel = FUEL_INTERVAL_MILES - miles_since_fuel
             miles_remaining_phase = max(0.0, target_odometer - odometer)
             miles_this_segment = min(
-                drive_available * AVG_SPEED_MPH,
+                drive_available * effective_speed_mph,
                 miles_before_fuel,
                 miles_remaining_phase,
             )
             if miles_this_segment <= 0:
                 continue
 
-            hours_this_segment = miles_this_segment / AVG_SPEED_MPH
+            hours_this_segment = miles_this_segment / effective_speed_mph
             drive_start = current_hour
             drive_end = current_hour + hours_this_segment
             add_period('driving', drive_start, drive_end)

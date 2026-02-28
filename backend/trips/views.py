@@ -111,6 +111,11 @@ class PlanTripView(APIView):
         total_distance  = route1['distance_miles'] + route2['distance_miles']
         total_drive_hrs = route1['duration_hours']  + route2['duration_hours']
         all_coords      = route1['coordinates'] + route2['coordinates']
+        effective_speed_mph = (
+            total_distance / total_drive_hrs
+            if total_distance > 0 and total_drive_hrs > 0
+            else 55.0
+        )
 
         # ── HOS Calculation ───────────────────────────────────
         try:
@@ -151,6 +156,7 @@ class PlanTripView(APIView):
                 'planned_start_hour': 8.0,
                 'total_distance_miles': round(total_distance,  1),
                 'total_drive_hours':    round(total_drive_hrs, 2),
+                'effective_speed_mph':  round(effective_speed_mph, 2),
                 'num_days': len(day_logs),
             },
             'hos_rules_applied': {
