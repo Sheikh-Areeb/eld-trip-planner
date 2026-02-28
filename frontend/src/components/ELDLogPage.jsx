@@ -9,6 +9,7 @@ import {
   YAxis,
   ComposedChart,
 } from "recharts";
+import { formatAbsoluteTime, formatHourLabel } from "../utils/time";
 
 const STATUS_ROWS = [
   { key: "off_duty", label: "1. Off Duty", color: "#6b7280", level: 0 },
@@ -26,22 +27,6 @@ const STATUS_BY_KEY = STATUS_ROWS.reduce((acc, row) => {
   acc[row.key] = row;
   return acc;
 }, {});
-
-function formatHourLabel(hour) {
-  if (hour === 0 || hour === 24) return "Midnight";
-  if (hour === 12) return "Noon";
-  return `${hour % 12 || 12}${hour < 12 ? "a" : "p"}`;
-}
-
-function formatAbsoluteTime(absHour) {
-  const day = Math.floor(absHour / 24) + 1;
-  const hourOfDay = absHour % 24;
-  const hh = Math.floor(hourOfDay).toString().padStart(2, "0");
-  const mm = Math.round((hourOfDay % 1) * 60)
-    .toString()
-    .padStart(2, "0");
-  return `Day ${day} ${hh}:${mm}`;
-}
 
 function clampHour(hour) {
   return Math.max(0, Math.min(24, Number(hour) || 0));

@@ -8,3 +8,14 @@ export function formatTripTime(absHour, separator = ", ") {
     .padStart(2, "0");
   return `Day ${day}${separator}${hh}:${mm}`;
 }
+
+export function formatAbsoluteTime(absHour) {
+  return formatTripTime(absHour, " ");
+}
+
+export function formatHourLabel(hour) {
+  const numeric = Number(hour) || 0;
+  if (numeric === 0 || numeric === 24) return "Midnight";
+  if (numeric === 12) return "Noon";
+  return `${numeric % 12 || 12}${numeric < 12 ? "a" : "p"}`;
+}
