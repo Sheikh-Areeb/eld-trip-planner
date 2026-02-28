@@ -3,13 +3,9 @@ import InputForm from "./components/InputForm";
 import MapView from "./components/MapView";
 import ELDLogPage from "./components/ELDLogPage";
 import {
-  fetchLatestTripPlan,
-  fetchRecentTripPlans,
   planTrip,
 } from "./services/tripService";
 import "./index.css";
-
-const FORM_STORAGE_KEY = "spotter-form-v1";
 
 const TABS = [
   { id: "map", label: "Route Map", icon: "🗺️" },
@@ -32,30 +28,13 @@ function isCoordinatePair(value) {
 }
 
 export default function App() {
-  const [form, setForm] = useState(() => {
-    try {
-      const saved = localStorage.getItem(FORM_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          currentLocation: parsed.currentLocation || "",
-          pickupLocation: parsed.pickupLocation || "",
-          dropoffLocation: parsed.dropoffLocation || "",
-          currentCycleUsed: parsed.currentCycleUsed || "",
-        };
-      }
-    } catch {
-      // Ignore malformed persisted form data.
-    }
-    return {
-      currentLocation: "",
-      pickupLocation: "",
-      dropoffLocation: "",
-      currentCycleUsed: "",
-    };
+  const [form, setForm] = useState({
+    currentLocation: "",
+    pickupLocation: "",
+    dropoffLocation: "",
+    currentCycleUsed: "",
   });
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [tripData, setTripData] = useState(null);
   const [tripPlans, setTripPlans] = useState([]);
@@ -72,39 +51,6 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("spotter-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(form));
-  }, [form]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadInitialState() {
-      try {
-        const recent = await fetchRecentTripPlans(10).catch(() => []);
-        if (cancelled) return;
-        if (recent.length) {
-          setTripPlans(recent);
-          setTripData(recent[0]);
-          return;
-        }
-        const latest = await fetchLatestTripPlan().catch(() => null);
-        if (cancelled) return;
-        if (latest) {
-          setTripData(latest);
-          setTripPlans([latest]);
-        }
-      } finally {
-        if (!cancelled) setInitializing(false);
-      }
-    }
-
-    loadInitialState();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleFormChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -189,7 +135,7 @@ export default function App() {
           form={form}
           onFormChange={handleFormChange}
           onSubmit={handleSubmit}
-          loading={loading || initializing}
+          loading={loading}
           error={error}
           tripData={tripData}
         />

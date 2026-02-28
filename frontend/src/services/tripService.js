@@ -29,13 +29,3 @@ export async function planTrip({
   });
   return resp.data;
 }
-
-export async function fetchLatestTripPlan() {
-  const resp = await api.get("/trips/plans/latest/");
-  return resp.data;
-}
-
-export async function fetchRecentTripPlans(limit = 5) {
-  const resp = await api.get("/trips/plans/recent/", { params: { limit } });
-  return resp.data?.plans || [];
-}
