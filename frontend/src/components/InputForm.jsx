@@ -29,11 +29,11 @@ export default function InputForm({
           <div className="form-group">
             <label>
               <span className="label-dot label-dot-current" />
-              Current Location
+              Current Location (lat,lng)
             </label>
             <input
               type="text"
-              placeholder="e.g. Chicago, IL or CHI"
+              placeholder="e.g. 41.8781,-87.6298"
               value={form.currentLocation}
               onChange={(e) => onFormChange("currentLocation", e.target.value)}
             />
@@ -42,11 +42,11 @@ export default function InputForm({
           <div className="form-group">
             <label>
               <span className="label-dot label-dot-pickup" />
-              Pickup Location
+              Pickup Location (lat,lng)
             </label>
             <input
               type="text"
-              placeholder="e.g. Indianapolis, IN or IND"
+              placeholder="e.g. 39.7684,-86.1581"
               value={form.pickupLocation}
               onChange={(e) => onFormChange("pickupLocation", e.target.value)}
             />
@@ -55,11 +55,11 @@ export default function InputForm({
           <div className="form-group">
             <label>
               <span className="label-dot label-dot-dropoff" />
-              Dropoff Location
+              Dropoff Location (lat,lng)
             </label>
             <input
               type="text"
-              placeholder="e.g. Nashville, TN or BNA"
+              placeholder="e.g. 36.1627,-86.7816"
               value={form.dropoffLocation}
               onChange={(e) => onFormChange("dropoffLocation", e.target.value)}
             />

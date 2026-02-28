@@ -14,6 +14,7 @@ import { formatTripTime } from "../utils/time";
 
 const LOCATIONIQ_KEY = import.meta.env.VITE_LOCATIONIQ_KEY || "";
 const LOCATIONIQ_TILE_BASE = `https://tiles.locationiq.com/v3`;
+const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 // Fix default marker icon paths for Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -57,20 +58,10 @@ function FitBounds({ coords }) {
 }
 
 export default function MapView({ tripData, theme = "dark" }) {
-  if (!LOCATIONIQ_KEY) {
-    return (
-      <div className="map-wrapper map-error-state">
-        <div className="empty-state">
-          <div className="empty-icon">🗺️</div>
-          <p>Map provider key missing</p>
-          <small>Set VITE_LOCATIONIQ_KEY in frontend/.env</small>
-        </div>
-      </div>
-    );
-  }
-
   const themeName = theme === "dark" ? "dark" : "light";
-  const tileUrl = `${LOCATIONIQ_TILE_BASE}/${themeName}/r/{z}/{x}/{y}.png?key=${LOCATIONIQ_KEY}`;
+  const tileUrl = LOCATIONIQ_KEY
+    ? `${LOCATIONIQ_TILE_BASE}/${themeName}/r/{z}/{x}/{y}.png?key=${LOCATIONIQ_KEY}`
+    : OSM_TILE_URL;
 
   if (!tripData) {
     return (
@@ -114,7 +105,11 @@ export default function MapView({ tripData, theme = "dark" }) {
       >
         <TileLayer
           url={tileUrl}
-          attribution='&copy; <a href="https://locationiq.com/">LocationIQ</a>'
+          attribution={
+            LOCATIONIQ_KEY
+              ? '&copy; <a href="https://locationiq.com/">LocationIQ</a>'
+              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }
           maxZoom={19}
         />
 

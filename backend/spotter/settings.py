@@ -6,9 +6,21 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production-spotter-eld')
+def _env(name: str, default: str = '') -> str:
+    val = os.environ.get(name, default)
+    if isinstance(val, str):
+        return val.strip().strip('"').strip("'")
+    return val
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = str(_env(name, str(default))).lower()
+    return raw in ('1', 'true', 'yes', 'on')
+
+
+SECRET_KEY = _env('SECRET_KEY', 'django-insecure-dev-key-change-in-production-spotter-eld')
+
+DEBUG = _env_bool('DEBUG', True)
 
 ALLOWED_HOSTS = ['*']
 
@@ -57,14 +69,14 @@ ASGI_APPLICATION = 'spotter.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'spotter'),
-        'USER': os.environ.get('POSTGRES_USER', 'spotter'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'spotter'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-        'CONN_MAX_AGE': int(os.environ.get('POSTGRES_CONN_MAX_AGE', '60')),
+        'NAME': _env('POSTGRES_DB', _env('PGDATABASE', 'spotter')),
+        'USER': _env('POSTGRES_USER', _env('PGUSER', 'spotter')),
+        'PASSWORD': _env('POSTGRES_PASSWORD', _env('PGPASSWORD', 'spotter')),
+        'HOST': _env('POSTGRES_HOST', _env('PGHOST', 'localhost')),
+        'PORT': _env('POSTGRES_PORT', _env('PGPORT', '5432')),
+        'CONN_MAX_AGE': int(_env('POSTGRES_CONN_MAX_AGE', '60')),
         'OPTIONS': {
-            'sslmode': os.environ.get('POSTGRES_SSLMODE', 'prefer'),
+            'sslmode': _env('POSTGRES_SSLMODE', _env('PGSSLMODE', 'prefer')),
         },
     }
 }
@@ -92,5 +104,5 @@ REST_FRAMEWORK = {
 }
 
 # LocationIQ settings
-LOCATIONIQ_API_KEY = os.environ.get('LOCATIONIQ_API_KEY', os.environ.get('ORS_API_KEY', ''))
-LOCATIONIQ_REGION = os.environ.get('LOCATIONIQ_REGION', 'us').lower()
+LOCATIONIQ_API_KEY = _env('LOCATIONIQ_API_KEY', _env('ORS_API_KEY', ''))
+LOCATIONIQ_REGION = _env('LOCATIONIQ_REGION', 'us').lower()

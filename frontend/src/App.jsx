@@ -16,6 +16,21 @@ const TABS = [
   { id: "eld", label: "ELD Logs", icon: "📋" },
 ];
 
+function isCoordinatePair(value) {
+  const parts = (value || "").split(",").map((p) => p.trim());
+  if (parts.length !== 2) return false;
+  const lat = Number(parts[0]);
+  const lng = Number(parts[1]);
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 export default function App() {
   const [form, setForm] = useState(() => {
     try {
@@ -109,6 +124,14 @@ export default function App() {
       !dropoffLocation.trim()
     ) {
       setError("Please fill in all three locations.");
+      return;
+    }
+    if (
+      !isCoordinatePair(currentLocation) ||
+      !isCoordinatePair(pickupLocation) ||
+      !isCoordinatePair(dropoffLocation)
+    ) {
+      setError("Use coordinates in 'lat,lng' format for all three locations.");
       return;
     }
     if (Number.isNaN(cycleUsed) || cycleUsed < 0 || cycleUsed > 70) {

@@ -5,10 +5,12 @@ from requests import HTTPError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import serializers as drf_serializers
 
 from .hos_calculator import HOSConfig, calculate_trip, stops_to_dict, day_logs_to_dict
 from .models import TripPlan
-from .services.locationiq import geocode_location, get_route
+from .services.locationiq import get_route
+from .serializers import TripPlanRequestSerializer
 
 
 class PlanTripView(APIView):
@@ -18,90 +20,31 @@ class PlanTripView(APIView):
     """
 
     def post(self, request):
-        data = request.data
-        current_loc  = data.get('current_location', '').strip()
-        pickup_loc   = data.get('pickup_location', '').strip()
-        dropoff_loc  = data.get('dropoff_location', '').strip()
+        serializer = TripPlanRequestSerializer(data=request.data)
         try:
-            cycle_used = float(data.get('current_cycle_used', 0))
-        except (TypeError, ValueError):
-            cycle_used = 0.0
-        cycle_rule = str(data.get('cycle_rule', '70_8')).strip() or '70_8'
-        adverse_driving_conditions = bool(data.get('adverse_driving_conditions', False))
-        short_haul_mode = str(data.get('short_haul_mode', 'none')).strip() or 'none'
-        use_16_hour_exception = bool(data.get('use_16_hour_exception', False))
-        used_16_hour_in_last_7_days = bool(data.get('used_16_hour_in_last_7_days', False))
-        return_to_reporting_location = bool(data.get('return_to_reporting_location', True))
-        enable_34h_restart = bool(data.get('enable_34h_restart', True))
-
-        if not all([current_loc, pickup_loc, dropoff_loc]):
+            serializer.is_valid(raise_exception=True)
+        except drf_serializers.ValidationError as exc:
             return Response(
-                {'error': 'current_location, pickup_location, and dropoff_location are all required.'},
+                {'error': exc.detail},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        validated = serializer.validated_data
+        current_loc = validated['current_location']
+        pickup_loc = validated['pickup_location']
+        dropoff_loc = validated['dropoff_location']
+        cycle_used = validated['current_cycle_used']
+        cycle_rule = validated['cycle_rule']
+        adverse_driving_conditions = validated['adverse_driving_conditions']
+        short_haul_mode = validated['short_haul_mode']
+        use_16_hour_exception = validated['use_16_hour_exception']
+        used_16_hour_in_last_7_days = validated['used_16_hour_in_last_7_days']
+        return_to_reporting_location = validated['return_to_reporting_location']
+        enable_34h_restart = validated['enable_34h_restart']
 
         cycle_max = 60 if cycle_rule == '60_7' else 70
-        if cycle_rule not in ('60_7', '70_8'):
-            return Response(
-                {'error': 'cycle_rule must be one of: 60_7, 70_8.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not (0 <= cycle_used <= cycle_max):
-            return Response(
-                {'error': f'current_cycle_used must be between 0 and {cycle_max} hours for cycle_rule={cycle_rule}.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if short_haul_mode not in ('none', 'cdl_150', 'non_cdl_150'):
-            return Response(
-                {'error': 'short_haul_mode must be one of: none, cdl_150, non_cdl_150.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if short_haul_mode == 'non_cdl_150' and use_16_hour_exception:
-            return Response(
-                {'error': '16-hour exception cannot be combined with non_cdl_150 short-haul mode.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # ── Geocode ───────────────────────────────────────────
-        try:
-            current_geo = geocode_location(current_loc)
-            pickup_geo  = geocode_location(pickup_loc)
-            dropoff_geo = geocode_location(dropoff_loc)
-        except Timeout:
-            return Response(
-                {
-                    'error': (
-                        'Geocoding timed out while contacting LocationIQ. '
-                        'Please retry in a moment.'
-                )
-            },
-                status=status.HTTP_504_GATEWAY_TIMEOUT,
-            )
-        except RequestException as e:
-            if isinstance(e, HTTPError):
-                try:
-                    details = e.response.json()
-                    provider_msg = details.get('error') or details.get('message')
-                except Exception:
-                    provider_msg = None
-                return Response(
-                    {
-                        'error': (
-                            f"Geocoding request failed with status {e.response.status_code}."
-                            + (f" {provider_msg}" if provider_msg else "")
-                        )
-                    },
-                    status=status.HTTP_502_BAD_GATEWAY,
-                )
-            return Response(
-                {'error': 'Geocoding service request failed. Please try again.'},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        except Exception as e:
-            return Response(
-                {'error': f'Geocoding failed: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        current_geo = TripPlanRequestSerializer.to_trip_point(current_loc, 'current_location')
+        pickup_geo = TripPlanRequestSerializer.to_trip_point(pickup_loc, 'pickup_location')
+        dropoff_geo = TripPlanRequestSerializer.to_trip_point(dropoff_loc, 'dropoff_location')
 
         # ── Route ─────────────────────────────────────────────
         try:
@@ -125,15 +68,27 @@ class PlanTripView(APIView):
             )
         except RequestException as e:
             if isinstance(e, HTTPError):
+                status_code = e.response.status_code
                 try:
                     details = e.response.json()
                     provider_msg = details.get('error') or details.get('message')
                 except Exception:
                     provider_msg = None
+                if status_code == 429:
+                    return Response(
+                        {
+                            'error': (
+                                'Routing rate limit reached at routing provider. '
+                                'Please retry in 1-2 minutes.'
+                                + (f" {provider_msg}" if provider_msg else "")
+                            )
+                        },
+                        status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    )
                 return Response(
                     {
                         'error': (
-                            f"Routing request failed with status {e.response.status_code}."
+                            f"Routing request failed with status {status_code}."
                             + (f" {provider_msg}" if provider_msg else "")
                         )
                     },
@@ -148,6 +103,10 @@ class PlanTripView(APIView):
                 {'error': f'Routing failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # Use provider waypoint names only when available.
+        current_geo['label'] = route1.get('start_name', '')
+        pickup_geo['label'] = route1.get('end_name', '') or route2.get('start_name', '')
+        dropoff_geo['label'] = route2.get('end_name', '')
 
         total_distance  = route1['distance_miles'] + route2['distance_miles']
         total_drive_hrs = route1['duration_hours']  + route2['duration_hours']

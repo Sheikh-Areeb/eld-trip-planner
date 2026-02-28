@@ -3,13 +3,11 @@ LocationIQ geocoding/routing service helpers.
 """
 
 import requests
-from requests import HTTPError
 from django.conf import settings
 
 
 LOCATIONIQ_REGION = getattr(settings, 'LOCATIONIQ_REGION', 'us')
 LOCATIONIQ_HOST = f'{LOCATIONIQ_REGION}1.locationiq.com'
-LOCATIONIQ_GEOCODE_URL = f'https://{LOCATIONIQ_HOST}/v1/search.php'
 LOCATIONIQ_DIRECTIONS_BASE = f'https://{LOCATIONIQ_HOST}/v1/directions/driving'
 LOCATIONIQ_API_KEY = getattr(settings, 'LOCATIONIQ_API_KEY', '').strip()
 
@@ -18,98 +16,7 @@ HEADERS = {
     'Accept': 'application/json',
 }
 
-GEOCODE_TIMEOUT_SECONDS = 5
 ROUTE_TIMEOUT_SECONDS = 12
-
-LOCATION_CODE_ALIASES = {
-    'CHI': 'Chicago, IL, USA',
-    'CHI,IL': 'Chicago, IL, USA',
-    'ORD': 'Chicago, IL, USA',
-    'MDW': 'Chicago, IL, USA',
-    'IND': 'Indianapolis, IN, USA',
-    'BNA': 'Nashville, TN, USA',
-    'NSH': 'Nashville, TN, USA',
-    'NYC': 'New York, NY, USA',
-    'LAX': 'Los Angeles, CA, USA',
-    'SFO': 'San Francisco, CA, USA',
-    'SEA': 'Seattle, WA, USA',
-    'ATL': 'Atlanta, GA, USA',
-    'DFW': 'Dallas, TX, USA',
-    'MIA': 'Miami, FL, USA',
-}
-
-
-def _candidate_geocode_queries(raw_query: str):
-    q = (raw_query or '').strip()
-    if not q:
-        return []
-
-    normalized = q.upper().replace(' ', '')
-    if normalized in LOCATION_CODE_ALIASES:
-        return [LOCATION_CODE_ALIASES[normalized], q]
-
-    candidates = [q]
-    if q.isalpha() and len(q) <= 5:
-        candidates.append(f'{q}, USA')
-    if q.isdigit() and len(q) == 5:
-        candidates.append(f'{q}, USA')
-
-    seen = set()
-    deduped = []
-    for item in candidates:
-        key = item.lower().strip()
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(item)
-    return deduped
-
-
-def geocode_location(query: str):
-    if not LOCATIONIQ_API_KEY:
-        raise ValueError('LocationIQ API key is missing. Set LOCATIONIQ_API_KEY in backend environment.')
-
-    last_http_error = None
-    for candidate in _candidate_geocode_queries(query):
-        params = {
-            'key': LOCATIONIQ_API_KEY,
-            'q': candidate,
-            'format': 'json',
-            'limit': 1,
-            'addressdetails': 0,
-            'countrycodes': 'us',
-        }
-        resp = requests.get(
-            LOCATIONIQ_GEOCODE_URL,
-            params=params,
-            headers=HEADERS,
-            timeout=GEOCODE_TIMEOUT_SECONDS,
-        )
-        try:
-            resp.raise_for_status()
-        except HTTPError as err:
-            last_http_error = err
-            continue
-
-        results = resp.json()
-        if not results:
-            continue
-
-        first = results[0]
-        label = first.get('display_name', candidate)
-        return {
-            'lat': float(first['lat']),
-            'lng': float(first['lon']),
-            'label': str(label).split(',')[0].strip(),
-        }
-
-    if last_http_error:
-        raise last_http_error
-
-    raise ValueError(
-        f"Could not find location: '{query}'. "
-        "You can use full names or codes like CHI, IND, BNA."
-    )
 
 
 def get_route(start_lng, start_lat, end_lng, end_lat):
@@ -173,9 +80,18 @@ def get_route(start_lng, start_lat, end_lng, end_lat):
                 'duration_minutes': round(step.get('duration', 0) / 60.0, 1),
             })
 
+    start_name = ''
+    end_name = ''
+    waypoints = data.get('waypoints') or route.get('waypoints') or []
+    if len(waypoints) >= 2:
+        start_name = str(waypoints[0].get('name') or '').strip()
+        end_name = str(waypoints[-1].get('name') or '').strip()
+
     return {
         'distance_miles': distance_m * 0.000621371,
         'duration_hours': duration_s / 3600.0,
         'coordinates': lat_lngs,
         'instructions': instructions,
+        'start_name': start_name,
+        'end_name': end_name,
     }
